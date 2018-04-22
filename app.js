@@ -13,11 +13,11 @@ class NormalNameValuePair extends NameValuePair{
     getDefault(objValue) {
         let value;
 
-        if (this.value instanceof Model || this.value instanceof NameValuePair) {
+        if (this.value instanceof Model || this.value instanceof NameValuePair || this.value instanceof DynamicArray) {
             return this.value.getDefault(objValue);
         }else if (typeof objValue === 'undefined') {
             return this.value;
-        } else {
+        }else {
             return objValue;
         }
 
@@ -41,6 +41,33 @@ class DynamicNameValuePair extends NameValuePair{
         }
 
         return Object.assign(this.value, obj);
+    }
+}
+
+class DynamicArray {
+    constructor(value) {
+        // 传入的value是动态参数，可以为基本数据类型，也可以是Model类
+        this.value = value;
+    }
+
+    getDefault(objValue) {
+        if (typeof objValue === 'undefined') {
+            return [];
+        }
+
+        if (!Array.isArray(objValue)) {
+            throw "Expect an array";
+        }
+
+        const arr = [];
+
+        objValue.forEach(value => {
+            if (this.value instanceof DynamicArray || this.value instanceof Model) {
+                arr.push(this.value.getDefault(value));
+            }
+        });
+
+        return arr;
     }
 }
 
@@ -75,10 +102,16 @@ const view = new Model([
     new NormalNameValuePair('10000', [])
 ]);
 
+const views = new DynamicArray(new Model([
+    new NormalNameValuePair('wId', ''),
+    new NormalNameValuePair('name', 'teller'),
+    new NormalNameValuePair('view', 'afjkajfkjadskjasikoj')
+]));
+
 const widgetModel = new Model([
     new NormalNameValuePair('wId', ''),
     new NormalNameValuePair('name', 'teller'),
-    new NormalNameValuePair('view', view)
+    new NormalNameValuePair('views', views)
 ]);
 
 const widgetsModel = new Model([
@@ -94,7 +127,10 @@ const designModel = new Model([
 console.log(designModel.getDefault({
     widgets: {
         'adkfhkadhfgkjrsgkj': {
-            wId: 'adkfhkadhfgkjrsgkj'
+            wId: 'adkfhkadhfgkjrsgkj',
+            views: [{
+                lol: "haha"
+            }]
         }
     }
 }))
